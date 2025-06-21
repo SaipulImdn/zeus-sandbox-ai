@@ -8,6 +8,7 @@ A CLI tool for interacting with AI models from Hugging Face directly in the term
 - **API Mode**: REST API server for chat completions
 - **Hugging Face Integration**: Uses Hugging Face chat completion endpoints
 - **TypeScript**: Fully typed codebase
+- **Rate Limiting**: Built-in rate limiting middleware for API protection
 
 ## Installation
 
@@ -21,9 +22,9 @@ Create a `.env` file with your Hugging Face configuration:
 
 ```env
 # Hugging Face API token and endpoint
-HF_TOKEN=your_huggingface_token_here
-HF_CHAT_ENDPOINT=https://router.huggingface.co/novita/v3/openai/chat/completions
-HF_MODEL=minimaxai/minimax-m1-80k
+HF_TOKEN=
+HF_CHAT_ENDPOINT=
+HF_MODEL=
 
 # Server configuration
 PORT=3000
@@ -31,6 +32,8 @@ PORT=3000
 # Mode selection (true for API server, false for CLI)
 USE_API=false
 ```
+
+**Note**: Currently using hardcoded values in the implementation for testing purposes.
 
 ## Usage
 
@@ -85,6 +88,13 @@ Response:
 }
 ```
 
+## Rate Limiting
+
+The API includes rate limiting to prevent abuse:
+- **Window**: 60 seconds per IP address
+- **Error Code**: RC: "88" when rate limit exceeded
+- **Response**: Returns wait time in seconds
+
 ## Project Structure
 
 ```
@@ -106,6 +116,10 @@ src/
 ├── model/
 │   └── huggingface/
 │       └── huggingface.ts  # Type definitions
+├── middleware/
+│   └── rateLimitMiddleware.ts # Rate limiting middleware
+├── utils/
+│   └── logger.ts           # Logging utilities
 └── constant/
     └── constant.ts         # Application constants
 ```
@@ -114,10 +128,25 @@ src/
 
 - `RC: "00"` - Success
 - `RC: "01"` - Bad request
+- `RC: "88"` - Rate limit exceeded
 - `RC: "99"` - Error
+
+## Current Configuration
+
+The application is currently configured to use:
+- **Endpoint**: ``
+- **Model**: ``
+- **Token**: Hardcoded for testing (consider moving to environment variables for production)
 
 ## Requirements
 
 - Node.js 18+
 - Valid Hugging Face API token
 - TypeScript
+
+## Development Notes
+
+- Logging includes detailed request/response information for debugging
+- Rate limiting prevents excessive API calls
+- Error handling provides detailed feedback for troubleshooting
+- Supports both streaming and non-streaming responses (currently using non-streaming)
