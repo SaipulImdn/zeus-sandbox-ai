@@ -1,10 +1,11 @@
 import express, { Request, Response } from "express";
+import { rateLimitMiddleware } from "../middleware/rateLimitMiddleware.js";
 import { ChatMessage } from "../model/huggingface/huggingface.js";
 import { runChatAndPrint } from "../usecase/chatsession_usecase.js";
 
 const router = express.Router();
 
-router.post("/ask", async (req: Request, res: Response): Promise<void> => {
+router.post("/ask", rateLimitMiddleware, async (req: Request, res: Response): Promise<void> => {
   const { messages, input } = req.body as {
     messages: ChatMessage[];
     input: string;

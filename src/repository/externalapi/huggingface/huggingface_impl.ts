@@ -1,6 +1,3 @@
-import dotenv from "dotenv";
-dotenv.config();
-
 import fetch from "node-fetch";
 import { CONTENT_TYPE_JSON } from "../../../constant/constant.js";
 import { ChatMessage } from "../../../model/huggingface/huggingface.js";
@@ -18,11 +15,7 @@ export async function chat(messages: ChatMessage[], model?: string) {
   if (!hfToken || !HF_CHAT_ENDPOINT || !(model || HF_MODEL)) {
     const errorMsg = "Missing environment variables: HF_TOKEN, HF_CHAT_ENDPOINT, or HF_MODEL";
     logError(errorMsg);
-    return {
-      RC: "99",
-      RD: errorMsg,
-      data: null,
-    };
+    throw new Error(errorMsg);
   }
 
   try {
@@ -45,26 +38,16 @@ export async function chat(messages: ChatMessage[], model?: string) {
     if (!res.ok) {
       const errorText = await res.text();
       logWarn(`HF response not OK - HTTP ${res.status}:`, errorText);
-      return {
-        RC: "99",
-        RD: `HTTP ${res.status}: ${errorText}`,
-        data: null,
-      };
+      throw new Error(`HTTP ${res.status}: ${errorText}`);
     }
 
     const data = await res.json();
     logInfo("HF API call success");
-    return {
-      RC: "00",
-      RD: "Success",
-      data,
-    };
+    logInfo("API Response structure:", JSON.stringify(data, null, 2));
+    
+    return data;
   } catch (err: any) {
     logError("HF API call failed:", err.message);
-    return {
-      RC: "99",
-      RD: `Request failed: ${err.message}`,
-      data: null,
-    };
+    throw err;
   }
 }
