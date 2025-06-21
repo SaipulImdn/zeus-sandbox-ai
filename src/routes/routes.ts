@@ -5,6 +5,46 @@ import { runChatAndPrint } from "../usecase/chatsession_usecase.js";
 
 const router = express.Router();
 
+router.get("/healthz", (req: Request, res: Response): void => {
+  const uptime = process.uptime();
+  const timestamp = new Date().toISOString();
+  
+  try {
+    const memoryUsage = process.memoryUsage();
+    const isHealthy = memoryUsage.heapUsed < 500 * 1024 * 1024; // Less than 500MB
+    
+    if (isHealthy) {
+      res.status(200).json({
+        status: "yes",
+        timestamp,
+        uptime: `${Math.floor(uptime)}s`,
+        memory: {
+          used: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`,
+          total: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`
+        }
+      });
+    } else {
+      res.status(503).json({
+        status: "no",
+        timestamp,
+        uptime: `${Math.floor(uptime)}s`,
+        reason: "High memory usage",
+        memory: {
+          used: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`,
+          total: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`
+        }
+      });
+    }
+  } catch (err: any) {
+    res.status(503).json({
+      status: "no",
+      timestamp,
+      reason: "Health check failed",
+      error: err.message
+    });
+  }
+});
+
 router.post("/ask", rateLimitMiddleware, async (req: Request, res: Response): Promise<void> => {
   const { messages, input } = req.body as {
     messages: ChatMessage[];
