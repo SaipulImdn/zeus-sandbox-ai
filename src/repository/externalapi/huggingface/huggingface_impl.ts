@@ -3,32 +3,63 @@ import { CONTENT_TYPE_JSON } from "../../../constant/constant.js";
 import { ChatMessage } from "../../../model/huggingface/huggingface.js";
 import { logError, logInfo, logWarn } from "../../../utils/logger.js";
 
-export async function chat(messages: ChatMessage[], model?: string) {
-  const hfToken = process.env.HF_TOKEN;
-  const HF_CHAT_ENDPOINT = process.env.HF_CHAT_ENDPOINT;
-  const HF_MODEL = process.env.HF_MODEL;
+// Load environment variables
+const HF_CONFIGS = [
+  {
+    token: process.env.HF_TOKEN_1,
+    endpoint: process.env.HF_CHAT_ENDPOINT_1,
+    model: process.env.HF_MODEL_1,
+    frequency: parseInt(process.env.PERCENTAGE_1 || "1", 10),
+  },
+  {
+    token: process.env.HF_TOKEN_2,
+    endpoint: process.env.HF_CHAT_ENDPOINT_2,
+    model: process.env.HF_MODEL_2,
+    frequency: parseInt(process.env.PERCENTAGE_2 || "1", 10),
+  },
+];
+
+let currentConfigIndex = 0;
+let currentCount = 0;
+
+function getNextConfig() {
+  const config = HF_CONFIGS[currentConfigIndex];
+  currentCount++;
+
+  if (currentCount >= config.frequency) {
+    currentConfigIndex = (currentConfigIndex + 1) % HF_CONFIGS.length;
+    currentCount = 0;
+  }
+
+  return config;
+}
+
+export async function chat(messages: ChatMessage[], modelOverride?: string) {
+  const { token, endpoint, model } = getNextConfig();
+
+  const finalModel = modelOverride || model;
 
   logInfo("Preparing chat request...");
-  logInfo("Model:", model || HF_MODEL);
+  logInfo("Using HF_MODEL:", finalModel);
   logInfo("Messages count:", messages.length);
 
-  if (!hfToken || !HF_CHAT_ENDPOINT || !(model || HF_MODEL)) {
-    const errorMsg = "Missing environment variables: HF_TOKEN, HF_CHAT_ENDPOINT, or HF_MODEL";
+  if (!token || !endpoint || !finalModel) {
+    const errorMsg = "Missing environment variables for HF config";
     logError(errorMsg);
     throw new Error(errorMsg);
   }
 
   try {
     const start = Date.now();
-    const res = await fetch(HF_CHAT_ENDPOINT, {
+    const res = await fetch(endpoint, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${hfToken}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": CONTENT_TYPE_JSON,
       },
       body: JSON.stringify({
         messages,
-        model: model || HF_MODEL,
+        model: finalModel,
         stream: false,
       }),
     });
@@ -44,7 +75,7 @@ export async function chat(messages: ChatMessage[], model?: string) {
     const data = await res.json();
     logInfo("HF API call success");
     logInfo("API Response structure:", JSON.stringify(data, null, 2));
-    
+
     return data;
   } catch (err: any) {
     logError("HF API call failed:", err.message);

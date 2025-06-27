@@ -1,14 +1,19 @@
 # Zeus AI Sandbox
 
-A CLI tool for interacting with AI models from Hugging Face directly in the terminal, with optional API server mode.
+A modern AI playground featuring CLI chat, web interface, and REST API server with load balancing across multiple Hugging Face providers.
 
 ## Features
 
-- **CLI Mode**: Interactive REPL for chatting with AI models
-- **API Mode**: REST API server for chat completions
-- **Hugging Face Integration**: Uses Hugging Face chat completion endpoints
-- **TypeScript**: Fully typed codebase
-- **Rate Limiting**: Built-in rate limiting middleware for API protection
+- **🖥️ CLI Mode**: Interactive REPL for terminal-based AI conversations
+- **🌐 Web Interface**: Modern web playground with real-time chat UI
+- **🔌 REST API**: Full-featured API server with health monitoring
+- **⚖️ Load Balancing**: Weighted distribution across multiple AI providers
+- **📊 Health Monitoring**: Real-time system health dashboard with metrics
+- **🛡️ Rate Limiting**: Built-in protection against API abuse
+- **📱 Responsive Design**: Mobile-friendly web interface
+- **⚡ Real-time Updates**: Live health monitoring with charts and metrics
+- **🎨 Modern UI**: Glassmorphism design with smooth animations
+- **🔧 TypeScript**: Fully typed codebase for better development experience
 
 ## Installation
 
@@ -18,55 +23,99 @@ npm install
 
 ## Configuration
 
-Create a `.env` file with your Hugging Face configuration:
+### Option 1: JSON Configuration (Recommended)
 
-```env
-# Hugging Face API token and endpoint
-HF_TOKEN=
-HF_CHAT_ENDPOINT=
-HF_MODEL=
+Create a `config.json` file in the project root:
 
-# Server configuration
-PORT=3000
-
-# Mode selection (true for API server, false for CLI)
-USE_API=false
+```json
+{
+  "huggingface": {
+    "providers": [
+      {
+        "id": 1,
+        "token": "your_hf_token_here",
+        "endpoint": "https://router.huggingface.co/featherless-ai/v1/chat/completions",
+        "model": "mistralai/Magistral-Small-2506",
+        "percentage": 70
+      },
+      {
+        "id": 2,
+        "token": "your_hf_token_here",
+        "endpoint": "https://router.huggingface.co/nebius/v1/chat/completions",
+        "model": "deepseek-ai/DeepSeek-R1-0528",
+        "percentage": 30
+      }
+    ]
+  },
+  "server": {
+    "port": 3000,
+    "useApi": true
+  }
+}
 ```
 
-**Note**: Currently using hardcoded values in the implementation for testing purposes.
+### Option 2: Environment Variables
+
+Create a `.env` file:
+
+```env
+# Multiple Provider Configuration
+HF_TOKEN_1=your_hf_token_here
+HF_CHAT_ENDPOINT_1=https://router.huggingface.co/featherless-ai/v1/chat/completions
+HF_MODEL_1=mistralai/Magistral-Small-2506
+PERCENTAGE_1=70
+
+HF_TOKEN_2=your_hf_token_here
+HF_CHAT_ENDPOINT_2=https://router.huggingface.co/nebius/v1/chat/completions
+HF_MODEL_2=deepseek-ai/DeepSeek-R1-0528
+PERCENTAGE_2=30
+
+# Server Configuration
+PORT=3000
+USE_API=true
+NODE_ENV=development
+HOST=localhost
+```
 
 ## Usage
 
-### CLI Mode (Default)
+### Web Interface (Recommended)
 
-Start the interactive terminal chat:
+Start the server and open the web playground:
 
 ```bash
 npm start
 ```
 
-This will launch a REPL where you can type messages and get AI responses directly in your terminal.
+Then open your browser to:
+- **Playground**: `http://localhost:3000/`
+- **Health Monitor**: `http://localhost:3000/interface/healthz.html`
+
+### CLI Mode
+
+Set `USE_API=false` in your configuration, then:
+
+```bash
+npm start
+```
+
+This launches an interactive terminal chat interface.
 
 ### API Server Mode
 
-Set `USE_API=true` in your `.env` file, then start the server:
+The API server runs automatically when `USE_API=true`. Available endpoints:
 
-```bash
-npm start
-```
+## API Endpoints
 
-The API will be available at `http://localhost:3000/api/v1/ask`
-
-#### API Endpoint
-
+### Chat Completion
 **POST** `/api/v1/ask`
 
-Request body:
+Request:
 ```json
 {
   "messages": [
     {
-      "role": "user",
+      "role": "user", 
       "content": "Hello, how are you?"
     }
   ],
@@ -78,7 +127,7 @@ Response:
 ```json
 {
   "RC": "00",
-  "RD": "Success",
+  "RD": "Success", 
   "data": {
     "reply": "AI response here",
     "messages": [
@@ -88,22 +137,84 @@ Response:
 }
 ```
 
+### Health Check
+**GET** `/api/v1/healthz`
+
+Response:
+```json
+{
+  "status": "yes",
+  "timestamp": "2025-06-23T07:03:29.927Z",
+  "uptime": "12s",
+  "memory": {
+    "used": "9MB",
+    "total": "11MB"
+  }
+}
+```
+
+## Web Interface Features
+
+### 🎮 Playground (`/`)
+- Modern chat interface with Zeus AI branding
+- Real-time message streaming
+- Sidebar with model selection and session stats
+- Mobile-responsive design
+- Smooth animations and transitions
+
+### 📊 Health Monitor (`/interface/healthz.html`)
+- Real-time system metrics with live charts
+- Memory usage visualization with progress bars
+- Response time tracking
+- Connection duration and update counters
+- Grafana-style dashboard design
+- Auto-updating every 2 seconds
+
+### 🚫 404 Page (`/not-found`)
+- Custom branded 404 page
+- Interactive sparkle effects
+- Auto-redirect to playground
+- Consistent design theme
+
+## Load Balancing
+
+The system automatically distributes requests across multiple providers based on weighted percentages:
+
+```json
+{
+  "providers": [
+    {
+      "percentage": 70  // 70% of requests
+    },
+    {
+      "percentage": 30  // 30% of requests  
+    }
+  ]
+}
+```
+
 ## Rate Limiting
 
-The API includes rate limiting to prevent abuse:
-- **Window**: 60 seconds per IP address
-- **Error Code**: RC: "88" when rate limit exceeded
-- **Response**: Returns wait time in seconds
+API protection with configurable limits:
+- **Default**: 100 requests per 15 minutes per IP
+- **Error Response**: RC "88" when limit exceeded
+- **Headers**: `X-RateLimit-*` headers included
 
 ## Project Structure
 
 ```
 src/
-├── main.ts                 # Entry point
+├── main.ts                 # Application entry point
+├── config/
+│   └── config.ts           # Configuration management
 ├── cli/
 │   └── repl.ts             # CLI REPL implementation
 ├── routes/
 │   └── routes.ts           # Express API routes
+├── interface/              # Web UI files
+│   ├── sandbox.html        # Main playground interface
+│   ├── healthz.html        # Health monitoring dashboard
+│   └── not-found.html      # Custom 404 page
 ├── usecase/
 │   ├── chatsession_usecase.ts
 │   └── chatsessionuse/
@@ -117,7 +228,7 @@ src/
 │   └── huggingface/
 │       └── huggingface.ts  # Type definitions
 ├── middleware/
-│   └── rateLimitMiddleware.ts # Rate limiting middleware
+│   └── rateLimitMiddleware.ts
 ├── utils/
 │   └── logger.ts           # Logging utilities
 └── constant/
@@ -126,27 +237,96 @@ src/
 
 ## Response Codes
 
-- `RC: "00"` - Success
-- `RC: "01"` - Bad request
-- `RC: "88"` - Rate limit exceeded
-- `RC: "99"` - Error
+| Code | Meaning |
+|------|---------|
+| `00` | Success |
+| `01` | Bad request |
+| `88` | Rate limit exceeded |
+| `99` | Internal error |
 
-## Current Configuration
+## Environment Detection
 
-The application is currently configured to use:
-- **Endpoint**: ``
-- **Model**: ``
-- **Token**: Hardcoded for testing (consider moving to environment variables for production)
+The application automatically detects environment and adjusts URLs:
+
+**Development:**
+```
+API server ready at http://localhost:3000
+Try UI at http://localhost:3000/interface/sandbox.html
+```
+
+**Production:**
+```
+API server ready at https://your-domain.com
+Try UI at https://your-domain.com/interface/sandbox.html
+Health check: https://your-domain.com/api/v1/healthz
+```
+
+## Provider Management
+
+Built-in functions for managing multiple AI providers:
+
+```typescript
+import { getRandomProvider, getProviderById } from './config/config.js';
+
+// Get weighted random provider
+const provider = getRandomProvider();
+
+// Get specific provider
+const provider1 = getProviderById(1);
+```
+
+## Health Monitoring Features
+
+- **Real-time Metrics**: Memory usage, uptime, response times
+- **Live Charts**: Historical data visualization
+- **Connection Stats**: Update counters and connection duration  
+- **Health Score**: Calculated system health percentage
+- **Visual Indicators**: Color-coded status indicators
+- **Auto-refresh**: Updates every 2 seconds
 
 ## Requirements
 
-- Node.js 18+
-- Valid Hugging Face API token
-- TypeScript
+- **Node.js**: 18+ 
+- **TypeScript**: Latest version
+- **Valid Hugging Face API Token**: Required for AI functionality
+- **Modern Browser**: For web interface (Chrome, Firefox, Safari, Edge)
 
-## Development Notes
+## Development
 
-- Logging includes detailed request/response information for debugging
-- Rate limiting prevents excessive API calls
-- Error handling provides detailed feedback for troubleshooting
-- Supports both streaming and non-streaming responses (currently using non-streaming)
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+```
+
+## Production Deployment
+
+1. Set `NODE_ENV=production`
+2. Configure `HOST` environment variable
+3. Use HTTPS in production
+4. Set appropriate rate limits
+5. Monitor health endpoint
+
+## License
+
+MIT License - See LICENSE file for details
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+---
+
+**Zeus AI Sandbox** - A modern, full-featured AI playground for developers and AI enthusiasts.

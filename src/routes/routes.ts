@@ -11,7 +11,7 @@ router.get("/healthz", (req: Request, res: Response): void => {
   
   try {
     const memoryUsage = process.memoryUsage();
-    const isHealthy = memoryUsage.heapUsed < 500 * 1024 * 1024; // Less than 500MB
+    const isHealthy = memoryUsage.heapUsed < 500 * 1024 * 1024; // 500 MB threshold
     
     if (isHealthy) {
       res.status(200).json({
